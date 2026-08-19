@@ -1,0 +1,7 @@
+../Core/Src/comms.c:24:10:nRF24_ReadReg	24	static
+../Core/Src/comms.c:34:13:nRF24_WriteReg	24	static
+../Core/Src/comms.c:43:13:nRF24_WriteRegMulti	24	static
+../Core/Src/comms.c:53:6:nRF24_InitRX	16	static
+../Core/Src/comms.c:68:9:nRF24_DataReady	16	static
+../Core/Src/comms.c:78:6:nRF24_ReadPayload	24	static
+../Core/Src/comms.c:91:6:USB_Print	24	static
