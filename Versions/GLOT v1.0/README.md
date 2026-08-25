@@ -37,3 +37,5 @@ Projekt więc podzielił się na dwie części:
 - Użycie komponentów będących tzw. "pod ręką" przez co płytka nadajnika jest niepotrzebnie duża. Duże przyciski, duży moduł przetwornicy, duży mikrokontroler.
 - Dodanie pól na przyciski, których nie musiało tam być bo kontroler realizował wszystkie potrzeby wejścia.
 - Pomimo faktu że zrobienie nadajnika na podstawie kontrolera do Xboxa wydawało się fajnym pomysłem to faktyczna realizacja trochę zniechęciła mnie do tej wizji. Częste zerwania połączeń, zmiany bibliotek, zacinający się cały esp32. Zastanowie się nad kupnem faktycznego kontrolera w przyszłości.
+
+![Logo]()
