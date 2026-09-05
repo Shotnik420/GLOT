@@ -1,6 +1,6 @@
-# GLOT 1.0 / 1.5
+# GLOT 2.0
 
-Wersja startowa i pierwsze kroki postawione w kierunku stworzenia w pełni funkcjonalnego prototypu. Pomimo błędów wieku dziecięcego, platformę udało się uruchomić fizycznie, co zaowocowało udanym lotem trwającym 7-8 sekund. Połączyłem wersje 1.0 i 1.5 w jedną sekcję, ponieważ jedyną różnicą między nimi jest płytka PCB, która otrzymała kilka poprawek, kod pozostaje identyczny.
+Druga wersja kontrolera.
 
 Zdecydowałem się na stworzenie autorskiego nadajnika i odbiornika, aby ominąć koszty drogiej aparatury RC (co dla budżetu studenta jest kluczowe). Projekt podzielił się na dwa moduły:
 
