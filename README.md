@@ -1,11 +1,10 @@
 # GLOT v2.0
 
-GLOT to projekt, którego celem jest stworzenie kontrolera lotu dla samolotów RC z możliwie jak najlepszym stosunkiem jakości do ceny. 
-
+GLOT to projekt, którego celem jest stworzenie kontrolera lotu dla samolotów RC z możliwie jak najlepszym stosunkiem jakości do ceny.
+![Zlozony zestaw](https://github.com/Shotnik420/GLOT/blob/main/Versions/GLOT%20v1.0/Nadajnik%20dzialajacy.jpg?raw=true)
 Jest to projekt głównie do naukii podstaw awioniki jak i tworzenia systemów opartych na STM32 i jak radzą sobie w trudnych warunkach.
 
 Obecnie projekt doczekał się 3 wersji
-
 
 ## Wersje
 
