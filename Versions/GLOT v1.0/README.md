@@ -1,29 +1,58 @@
-# GLOT 2.0
+# GLOT 1.0 / 1.5
 
-Po wyciągnięciu trudnych lekcji z błędów wieku dziecięcego wersji 1.0/1.5, nadszedł czas na całkowite przeprojektowanie sprzętu. Największą zmianą w wersji 2.0 jest rezygnacja z gotowych modułów typu "Blackpill" na rzecz w pełni autorskiej, zintegrowanej płytki PCB (Custom FC). Skupiłem się na miniaturyzacji, poprawie niezawodności zasilania oraz zmianie linku radiowego na profesjonalny.
+Wersja startowa i pierwsze kroki postawione w kierunku stworzenia w pełni funkcjonalnego prototypu. Pomimo błędów wieku dziecięcego, platformę udało się uruchomić fizycznie, co zaowocowało udanym lotem trwającym 7-8 sekund. Połączyłem wersje 1.0 i 1.5 w jedną sekcję, ponieważ jedyną różnicą między nimi jest płytka PCB, która otrzymała kilka poprawek, kod pozostaje identyczny.
 
-W tej wersji całkowicie porzuciłem pomysł budowy własnego, masywnego nadajnika na bazie ESP32 i pada od Xboxa. Zamiast tego przeszedłem na sprawdzony i niezawodny system, co pozwoliło skupić się w 100% na rozwoju samego kontrolera lotu.
-![GLOT 2.0 PCB](https://raw.githubusercontent.com/Shotnik420/GLOT/refs/heads/main/Versions/GLOT%20v2.0/GLOTv2PCB.png)
+Zdecydowałem się na stworzenie autorskiego nadajnika i odbiornika, aby ominąć koszty drogiej aparatury RC (co dla budżetu studenta jest kluczowe). Projekt podzielił się na dwa moduły:
 
-### Kluczowe zmiany sprzętowe (Odbiornik / FC):
+- **Odbiornik:** Zbudowany na bazie płytki STM32 Blackpill z układem STM32F411CEU6. Moduł nRF24L01+PA+LNA odbiera dane i tłumaczy je na wysterowanie 4 serwomechanizmów oraz prędkość silnika bezszczotkowego (ESC). Na pokładzie znajduje się moduł GY-91 (MPU9250), obsługiwany przez prowizoryczny system PID stabilizujący lot.
 
-- **Autorskie PCB:** Zintegrowanie mikrokontrolera STM32F411 bezpośrednio na płycie. Znacznie zmniejszyło to gabaryty układu, co pozwala na bezproblemowe i bezpieczne umieszczenie go w ciasnym kadłubie samolotu (koniec ze spięciami od upychania kabli na siłę). Płytka zyskała też złącze **USB-C**.
-- **Rozdzielone zasilanie (Koniec z brownoutami!):** Zastosowałem zewnętrzne zasilanie dla serw (wejście z UBEC 5V) oraz dedykowany stabilizator LDO (AP7361C 3.3V) zasilający wyłącznie mikrokontroler i czujniki. Prąd serw nie zakłóca już pracy "mózgu" układu.
-- **Nowy link radiowy (ELRS):** Niezawodność to podstawa. Zrezygnowałem z modułów nRF24 na rzecz odbiornika **BetaFPV (ExpressLRS)** komunikującego się po protokole UART. Gwarantuje to ogromny zasięg i brak problemów ze zrywaniem połączenia.
-- **Blackbox (Pamięć Flash):** Na schemacie pojawił się układ W25Q128 (16MB pamięci Flash po SPI). To fundament pod przyszły system logowania parametrów lotu, co drastycznie ułatwi strojenie algorytmu PID w kolejnych iteracjach.
-- **Poprawione błędy:** Ścieżki I2C (SDA/SCL) dla modułu GY-91 zostały poprawnie poprowadzone.
+![Odbiornik](https://github.com/Shotnik420/GLOT/blob/main/Versions/GLOT%20v1.0/PID.gif?raw=true)
+
+- **Nadajnik:** Oparty na ESP32-S3. Wykorzystuje bibliotekę Bluepad32 do łączenia się z kontrolerem od konsoli przez Bluetooth, a wejścia przesyła w świat za pomocą modułu nRF24L01+PA+LNA. Decyzja o użyciu tak potężnego mikrokontrolera i sporych komponentów z tzw. "szuflady" sprawiła, że układ stał się dość masywny.
+
+![Nadajnik](https://github.com/Shotnik420/GLOT/blob/main/Versions/GLOT%20v1.0/Nadajnik%20dzialajacy.jpg?raw=true)
 
 ---
 
 ## Użyte technologie
 
-| Technologia / Komponent | Opis i zastosowanie w projekcie                                                                                                  |
-| :---------------------- | :------------------------------------------------------------------------------------------------------------------------------- |
-| **C / STM32 HAL**       | Główny język i biblioteka sprzętowa. Kod rozwija się w stronę bardziej modularnej i przemyślanej architektury.                   |
-| **I2C**                 | Protokół do komunikacji z modułem IMU (GY-91 / MPU9250). Tym razem bez zworek i cięcia ścieżek na PCB!                           |
-| **UART (Serial)**       | Użyty do odbierania sygnału ze standardowego odbiornika RC (BetaFPV ELRS) oraz do debugowania.                                   |
-| **SPI**                 | Szybka magistrala zaprzęgnięta do obsługi nowej pamięci Flash (W25Q128) z myślą o zapisywaniu logów z lotu (Blackbox).           |
-| **PWM (Timery)**        | Sprzętowe sterowanie 4 serwami (Lotki L/P, Ster wysokości, Ster kierunku) zasilanymi z dedykowanego obwodu 5V (UBEC).            |
-| **Algorytm PID**        | Wciąż obecny system stabilizacji. Główny cel na przyszłość: pełne zrozumienie, optymalizacja i samodzielne napisanie go od nowa. |
+| Technologia / Komponent | Opis i zastosowanie w projekcie                                                                 |
+| :---------------------- | :---------------------------------------------------------------------------------------------- |
+| **C / STM32 HAL**       | Główny język i biblioteka sprzętowa użyta do zaprogramowania mikrokontrolera STM32.             |
+| **I2C**                 | Protokół komunikacyjny użyty do odczytu danych z modułu GY-91 (akcelerometr/żyroskop).          |
+| **SPI**                 | Szybka magistrala użyta do obsługi modułu radiowego nRF24L01+PA+LNA.                            |
+| **PWM (Timery)**        | Sprzętowe generowanie sygnałów (TIM2, TIM3) sterujących serwami i silnikiem bezszczotkowym.     |
+| **USB CDC**             | Wirtualny port COM (USB) wykorzystany do wygodnego przesyłania logów i debugowania.             |
+| **Algorytm PID**        | Regulator (Proporcjonalno-Całkująco-Różniczkujący) wyliczający korekty lotek i steru wysokości. |
 
 ---
+
+## Podsumowanie testów
+
+### Odbiornik
+
+### Co poszło dobrze
+
+- Pisanie kodu w .C dla STM'a okazało się zaskakująco proste i przyjemne. Stworzyłem całkiem dobry system, który posiadał odbieranie danych radiowych i przekazywanie dostarczonych wartości na zakres serw. Jest prowizoryczny PID (Prioporcjonalno-całkująco-różniczkujący), który jednak jest tak skomplikowany że nie przyznam się do jego napisania, a zawdzięczam go Gemini od Google'a, lecz jest to jeden z moich celów na następne wersje by go zrozumieć i napisać raz jeszcze.
+
+### Co poszło ŹLE
+
+- Połączenie prądu serw z prądem układu sterowniczego. STM32 brownoutował za każdym mocniejszym pociągnieciem serwa. Wymagało przecięcia ścieżek i dolutowania osobnej baterii.
+
+- Pomylone ścieżki SDA i SCL dla modułu GY-91. Wymagało przeciecia ścieżek i zrobienia zworek.
+
+- Zbyt słaby prąd dla serw. Uruchomienie wszystkich naraz było niemożliwe.
+
+- Rozmiar płytki był wyraźnie niekorzystny dla budowy samolotu. Za duży.
+
+- Niezabezpieczenie układów przed wsadzeniem ich do ciasnego kokpitu pojazdu spowodowało fizyczne zwarcie i spalenie mikrokontrolera i przetwornicy
+
+### Nadajnik
+
+### Co poszło ŹLE
+
+- Użycie komponentów będących tzw. "pod ręką" przez co płytka nadajnika jest niepotrzebnie duża. Duże przyciski, duży moduł przetwornicy, duży mikrokontroler.
+
+- Dodanie pól na przyciski, których nie musiało tam być bo kontroler realizował wszystkie potrzeby wejścia.
+
+- Pomimo faktu że zrobienie nadajnika na podstawie kontrolera do Xboxa wydawało się fajnym pomysłem to faktyczna realizacja trochę zniechęciła mnie do tej wizji. Częste zerwania połączeń, zmiany bibliotek, zacinający się cały esp32. Zastanowie się nad kupnem faktycznego kontrolera w przyszłości.
