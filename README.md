@@ -1,5 +1,11 @@
 # ✈️ GLOT - Kontroler Lotu RC
 
+[![STM32](https://img.shields.io/badge/STM32-03234B?style=flat-square&logo=stmicroelectronics&logoColor=white)](https://github.com/Shotnik420/GLOT)
+[![C/C++](https://img.shields.io/badge/C%2FC%2B%2B-00599C?style=flat-square&logo=c&logoColor=white)](https://github.com/Shotnik420/GLOT)
+[![ESP32](https://img.shields.io/badge/ESP32-E7352C?style=flat-square&logo=espressif&logoColor=white)](https://github.com/Shotnik420/GLOT)
+[![RC Flight Controller](https://img.shields.io/badge/RC_Flight_Controller-FF6600?style=flat-square)](https://github.com/Shotnik420/GLOT)
+[![Hardware PCB](https://img.shields.io/badge/Hardware_PCB-00A69C?style=flat-square)](https://github.com/Shotnik420/GLOT)
+
 GLOT to projekt, którego celem jest stworzenie kontrolera lotu dla samolotów RC z możliwie jak najlepszym stosunkiem jakości do ceny.
 
 ![GLOT 2.0 PCB](https://raw.githubusercontent.com/Shotnik420/GLOT/refs/heads/main/Versions/GLOT%20v2.0/GLOTv2PCB.png)
