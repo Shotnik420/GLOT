@@ -17,9 +17,9 @@ Jest to projekt głównie do naukii podstaw awioniki jak i tworzenia systemów o
 ---
 
 ## Wersje
-
+- 📦 **[GLOT v1.0 / 1.5 (Najlepiej udokumentowana)](https://github.com/Shotnik420/GLOT/tree/main/Versions/GLOT%20v1.0)**  
+  _Wersja prototypowa._ Pierwsze kroki i weryfikacja koncepcji. Zakończona sukcesem w postaci pierwszego, kilkusekundowego lotu. Pozwoliła zidentyfikować kluczowe problemy z zasilaniem (brownouty), zakłóceniami magistrali I2C i gabarytami płytek. Składała się z dedykowanego nadajnika na ESP32 i odbiornika na STM32.
 - ⚡ **[GLOT v2.0 (Obecna wersja)](https://github.com/Shotnik420/GLOT/tree/main/Versions/GLOT%20v2.0)**  
   _Rozwój i optymalizacja._ Najnowsza generacja kontrolera, w której wyciągnięto wnioski z błędów poprzednika. Zoptymalizowano kwestie zasilania serwomechanizmów, poprawiono routing ścieżek na PCB i zmniejszono rozmiary urządzenia, aby lepiej pasowało do ciasnych kadłubów modeli RC.
 
-- 📦 **[GLOT v1.0 / 1.5](https://github.com/Shotnik420/GLOT/tree/main/Versions/GLOT%20v1.0)**  
-  _Wersja prototypowa._ Pierwsze kroki i weryfikacja koncepcji. Zakończona sukcesem w postaci pierwszego, kilkusekundowego lotu. Pozwoliła zidentyfikować kluczowe problemy z zasilaniem (brownouty), zakłóceniami magistrali I2C i gabarytami płytek. Składała się z dedykowanego nadajnika na ESP32 i odbiornika na STM32.
+
