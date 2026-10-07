@@ -11,6 +11,8 @@ Płytka była zainspirowana projektem [DroneController](https://github.com/FPV-D
 
 
 ![Polutowany GLOT 2.0](https://github.com/Shotnik420/GLOT/blob/main/Versions/GLOT%20v2.0/GLOT_v2_polutowane.jpg?raw=true | width=100))
+<img src="https://github.com/Shotnik420/GLOT/blob/main/Versions/GLOT%20v2.0/GLOT_v2_polutowane.jpg?raw=true" alt="Polutowany odbiornik GLOT 2.0 PCB" width="400">
+<img src="https://raw.githubusercontent.com/Shotnik420/GLOT/refs/heads/main/Versions/GLOT%20v2.0/GLOTv2PCB.png" alt="Odbiornik GLOT 2.0 PCB" width="400">
 ![Odbiornik GLOT 2.0 PCB](https://raw.githubusercontent.com/Shotnik420/GLOT/refs/heads/main/Versions/GLOT%20v2.0/GLOTv2PCB.png)
 
 ## Co mamy na pokładzie? (Hardware)
