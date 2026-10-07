@@ -9,11 +9,8 @@ Projekt podzielił się na dwa moduły:
 
 Płytka była zainspirowana projektem [DroneController](https://github.com/FPV-Drone-STM32F411/DroneController) i połączenia z niego zostały zapożyczone na pierwsze wersje płytki. Z czasem zostały one zmione lecz autorom tego szablonu, [Evan Bhogel](https://github.com/esb8) oraz [Ammar Mahmood](https://github.com/ammarjmahmood), należy się moje uznanie iż bazowałem na ich projekcie.
 
-
-![Polutowany GLOT 2.0](https://github.com/Shotnik420/GLOT/blob/main/Versions/GLOT%20v2.0/GLOT_v2_polutowane.jpg?raw=true | width=100))
 <img src="https://github.com/Shotnik420/GLOT/blob/main/Versions/GLOT%20v2.0/GLOT_v2_polutowane.jpg?raw=true" alt="Polutowany odbiornik GLOT 2.0 PCB" width="400">
 <img src="https://raw.githubusercontent.com/Shotnik420/GLOT/refs/heads/main/Versions/GLOT%20v2.0/GLOTv2PCB.png" alt="Odbiornik GLOT 2.0 PCB" width="400">
-![Odbiornik GLOT 2.0 PCB](https://raw.githubusercontent.com/Shotnik420/GLOT/refs/heads/main/Versions/GLOT%20v2.0/GLOTv2PCB.png)
 
 ## Co mamy na pokładzie? (Hardware)
 
