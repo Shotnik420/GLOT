@@ -1,0 +1,3 @@
+../Core/Src/controls.c:12:6:Test_Servo	88	static
+../Core/Src/controls.c:26:9:apply_deadzone	16	static
+../Core/Src/controls.c:33:6:map_val	40	static
