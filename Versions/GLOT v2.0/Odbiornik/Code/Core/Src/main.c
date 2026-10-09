@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "usbd_cdc_if.h"
 #include "controls.h"
+#include "pid.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,7 +60,11 @@ uint8_t crsf_buffer[64];  // Bufor na całą paczkę CRSF
 uint8_t crsf_index = 0;   // Licznik odebranych bajtów
 volatile uint16_t roll, pitch, throttle, yaw;
 
+PID_Controller pid_roll;
+PID_Controller pid_pitch;
+
 uint32_t last_blink_time = 0;
+uint32_t last_pid_time = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -176,6 +181,11 @@ int main(void)
     __HAL_TIM_MOE_ENABLE(&htim1);
     TIM1->CCR2 = 1000; // Zabezpieczenie (0% gazu)
 
+
+    ID_Init(&pid_roll, 0.5f, 0.0f, 0.0f, 100.0f, 300.0f);
+    PID_Init(&pid_pitch, 0.5f, 0.0f, 0.0f, 100.0f, 300.0f);
+
+    last_time = HAL_GetTick();
     // Czekamy 2 sekundy, aż ESC zagra melodyjkę i zniknie pikanie
     HAL_Delay(2000);
     /* USER CODE END 2 */
