@@ -141,7 +141,6 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USB_DEVICE_Init();
   MX_TIM1_Init();
-
   /* USER CODE BEGIN 2 */
     // --- 1. WYMUSZENIE CZĘSTOTLIWOŚCI (50 Hz) ---
     __HAL_TIM_SET_AUTORELOAD(&htim4, 19999);
@@ -204,88 +203,180 @@ int main(void)
 
     last_pid_time = HAL_GetTick();
     // Czekamy 2 sekundy, aż ESC zagra melodyjkę i zniknie pikanie
+    // --- TRYB SERWISOWY (odkomentuj tylko na biurku bez podpiętych popychaczy!) ---
+     Test_Servo(&htim4, TIM_CHANNEL_3, &cfgElev);
+     Test_Servo(&htim4, TIM_CHANNEL_4, &cfgFlapL);
+     Test_Servo(&htim2, TIM_CHANNEL_3, &cfgFlapR);
+     Test_Servo(&htim3, TIM_CHANNEL_4, &cfgRudder);
     HAL_Delay(2000);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
     while (1)
-    {
-        // 1. Mruganie diodą (wizualny wskaźnik, że kod nie wisi)
-        if (HAL_GetTick() - last_blink_time >= 300)
         {
-            HAL_GPIO_TogglePin(GPIOA, LED_Pin);
-            last_blink_time = HAL_GetTick();
+            // 1. Mruganie diodą (wizualny wskaźnik, że kod nie wisi)
+            if (HAL_GetTick() - last_blink_time >= 300)
+            {
+                HAL_GPIO_TogglePin(GPIOA, LED_Pin);
+                last_blink_time = HAL_GetTick();
+            }
+
+            // 2. Obliczenie delty czasu (dt) w sekundach dla PID
+            uint32_t current_time = HAL_GetTick();
+            float dt = (current_time - last_pid_time) / 1000.0f;
+            last_pid_time = current_time;
+
+            // Zabezpieczenie przed błędem matematycznym
+            if(dt <= 0.0f) dt = 0.001f;
+
+            // 3. Odczyt danych z żyroskopu i akcelerometru
+            MPU9250_Read(&sensor_data);
+
+            // 4. Przeliczenie sygnałów z CRSF na oczekiwaną prędkość obrotu (Setpoints)
+            setpoint_roll = (roll - 992.0f) * 0.18f;
+            setpoint_pitch = (pitch - 992.0f) * 0.18f;
+
+            // Zabezpieczenie przed utratą sygnału (Failsafe)
+            if (roll < 100) setpoint_roll = 0.0f;
+            if (pitch < 100) setpoint_pitch = 0.0f;
+
+            // 5. Obliczenie wartości stabilizujących przez PID
+            pid_out_roll = PID_Compute(&pid_roll, setpoint_roll, sensor_data.gyro_x, dt);
+            pid_out_pitch = PID_Compute(&pid_pitch, setpoint_pitch, sensor_data.gyro_y, dt);
+
+            // --- BEZPOŚREDNI RUCH DRĄŻKA (Feed-Forward) ---
+            // Zmapuj drążki bezpośrednio na wychylenie PWM (od -400 do +400 jednostek)
+            long stick_pitch_mix = map_val(pitch, 172, 1811, -400, 400);
+            long stick_roll_mix = map_val(roll, 172, 1811, -400, 400);
+
+            // 6. MIKSER (Środek serwa + korekta z PID + bezpośredni ruch drążkiem)
+            pwm_elev = cfgElev.center + (long)pid_out_pitch + stick_pitch_mix;
+
+            // Pamiętaj o znakach dla lotek (jedna idzie w górę, druga w dół)
+            pwm_flapL = cfgFlapL.center + (long)pid_out_roll + stick_roll_mix;
+            pwm_flapR = cfgFlapR.center + (long)pid_out_roll + stick_roll_mix;
+
+            // Używamy Twojego map_val do zmapowania drążków na limity serwa kierunku
+            pwm_rudder = map_val(yaw, 172, 1811, cfgRudder.min, cfgRudder.max);
+
+            // Gaz zostaje standardowo
+            pwm_throttle = map_val(throttle, 172, 1811, 1000, 2000);
+
+            // 7. ZABEZPIECZENIA - obcięcie sygnałów PWM do bezpiecznych limitów mechanicznych
+            if(pwm_elev > cfgElev.max) pwm_elev = cfgElev.max;
+            else if(pwm_elev < cfgElev.min) pwm_elev = cfgElev.min;
+
+            if(pwm_flapL > cfgFlapL.max) pwm_flapL = cfgFlapL.max;
+            else if(pwm_flapL < cfgFlapL.min) pwm_flapL = cfgFlapL.min;
+
+            if(pwm_flapR > cfgFlapR.max) pwm_flapR = cfgFlapR.max;
+            else if(pwm_flapR < cfgFlapR.min) pwm_flapR = cfgFlapR.min;
+
+            // Zabezpieczenie silnika
+            if(pwm_throttle > 2000) pwm_throttle = 2000;
+            if(throttle < 200) pwm_throttle = 1000; // Awaryjne odcięcie silnika
+
+            // --- OBLICZANIE PRAWDZIWEGO KĄTA (FILTR KOMPLEMENTARNY) ---
+
+            // 1. Akcelerometr wylicza gdzie jest grawitacja (wzór z trygonometrii, 57.2957 to 180/PI)
+            accel_pitch = atan2f(-sensor_data.accel_x, sensor_data.accel_z) * 57.2957f;
+            accel_roll = atan2f(sensor_data.accel_y, sensor_data.accel_z) * 57.2957f;
+
+            // 2. Filtr komplementarny: Ufa w 98% żyroskopowi (szybkość), a w 2% akcelerometrowi (grawitacja)
+            angle_pitch = 0.98f * (angle_pitch + (sensor_data.gyro_y * dt)) + 0.02f * accel_pitch;
+            angle_roll = 0.98f * (angle_roll + (sensor_data.gyro_x * dt)) + 0.02f * accel_roll;
+
+            // 8. Aktualizacja PWM na timerach
+            TIM4->CCR3 = (uint32_t)pwm_elev;     // PB8
+            TIM4->CCR4 = (uint32_t)pwm_flapL;    // PB9
+            TIM2->CCR3 = (uint32_t)pwm_flapR;    // PB10
+            TIM3->CCR4 = (uint32_t)pwm_rudder;   // PB1
+            TIM1->CCR2 = (uint32_t)pwm_throttle; // PA9
+        }while (1)
+        {
+            // 1. Mruganie diodą (wizualny wskaźnik, że kod nie wisi)
+            if (HAL_GetTick() - last_blink_time >= 300)
+            {
+                HAL_GPIO_TogglePin(GPIOA, LED_Pin);
+                last_blink_time = HAL_GetTick();
+            }
+
+            // 2. Obliczenie delty czasu (dt) w sekundach dla PID
+            uint32_t current_time = HAL_GetTick();
+            float dt = (current_time - last_pid_time) / 1000.0f;
+            last_pid_time = current_time;
+
+            // Zabezpieczenie przed błędem matematycznym
+            if(dt <= 0.0f) dt = 0.001f;
+
+            // 3. Odczyt danych z żyroskopu i akcelerometru
+            MPU9250_Read(&sensor_data);
+
+            // 4. Przeliczenie sygnałów z CRSF na oczekiwaną prędkość obrotu (Setpoints)
+            setpoint_roll = (roll - 992.0f) * 0.18f;
+            setpoint_pitch = (pitch - 992.0f) * 0.18f;
+
+            // Zabezpieczenie przed utratą sygnału (Failsafe)
+            if (roll < 100) setpoint_roll = 0.0f;
+            if (pitch < 100) setpoint_pitch = 0.0f;
+
+            // 5. Obliczenie wartości stabilizujących przez PID
+            pid_out_roll = PID_Compute(&pid_roll, setpoint_roll, sensor_data.gyro_x, dt);
+            pid_out_pitch = PID_Compute(&pid_pitch, setpoint_pitch, sensor_data.gyro_y, dt);
+
+            // --- BEZPOŚREDNI RUCH DRĄŻKA (Feed-Forward) ---
+            // Zmapuj drążki bezpośrednio na wychylenie PWM (od -400 do +400 jednostek)
+            long stick_pitch_mix = map_val(pitch, 172, 1811, -400, 400);
+            long stick_roll_mix = map_val(roll, 172, 1811, -400, 400);
+
+            // 6. MIKSER (Środek serwa + korekta z PID + bezpośredni ruch drążkiem)
+            pwm_elev = cfgElev.center + (long)pid_out_pitch + stick_pitch_mix;
+
+            // Pamiętaj o znakach dla lotek (jedna idzie w górę, druga w dół)
+            pwm_flapL = cfgFlapL.center + (long)pid_out_roll + stick_roll_mix;
+            pwm_flapR = cfgFlapR.center - (long)pid_out_roll - stick_roll_mix;
+
+            // Używamy Twojego map_val do zmapowania drążków na limity serwa kierunku
+            pwm_rudder = map_val(yaw, 172, 1811, cfgRudder.min, cfgRudder.max);
+
+            // Gaz zostaje standardowo
+            pwm_throttle = map_val(throttle, 172, 1811, 1000, 2000);
+
+            // 7. ZABEZPIECZENIA - obcięcie sygnałów PWM do bezpiecznych limitów mechanicznych
+            if(pwm_elev > cfgElev.max) pwm_elev = cfgElev.max;
+            else if(pwm_elev < cfgElev.min) pwm_elev = cfgElev.min;
+
+            if(pwm_flapL > cfgFlapL.max) pwm_flapL = cfgFlapL.max;
+            else if(pwm_flapL < cfgFlapL.min) pwm_flapL = cfgFlapL.min;
+
+            if(pwm_flapR > cfgFlapR.max) pwm_flapR = cfgFlapR.max;
+            else if(pwm_flapR < cfgFlapR.min) pwm_flapR = cfgFlapR.min;
+
+            // Zabezpieczenie silnika
+            if(pwm_throttle > 2000) pwm_throttle = 2000;
+            if(throttle < 200) pwm_throttle = 1000; // Awaryjne odcięcie silnika
+
+            // --- OBLICZANIE PRAWDZIWEGO KĄTA (FILTR KOMPLEMENTARNY) ---
+
+            // 1. Akcelerometr wylicza gdzie jest grawitacja (wzór z trygonometrii, 57.2957 to 180/PI)
+            accel_pitch = atan2f(-sensor_data.accel_x, sensor_data.accel_z) * 57.2957f;
+            accel_roll = atan2f(sensor_data.accel_y, sensor_data.accel_z) * 57.2957f;
+
+            // 2. Filtr komplementarny: Ufa w 98% żyroskopowi (szybkość), a w 2% akcelerometrowi (grawitacja)
+            angle_pitch = 0.98f * (angle_pitch + (sensor_data.gyro_y * dt)) + 0.02f * accel_pitch;
+            angle_roll = 0.98f * (angle_roll + (sensor_data.gyro_x * dt)) + 0.02f * accel_roll;
+
+            // 8. Aktualizacja PWM na timerach
+            TIM4->CCR3 = (uint32_t)pwm_elev;     // PB8
+            TIM4->CCR4 = (uint32_t)pwm_flapL;    // PB9
+            TIM2->CCR3 = (uint32_t)pwm_flapR;    // PB10
+            TIM3->CCR4 = (uint32_t)pwm_rudder;   // PB1
+            TIM1->CCR2 = (uint32_t)pwm_throttle; // PA9
         }
+    /* USER CODE END WHILE */
 
-        // 2. Obliczenie delty czasu (dt) w sekundach dla PID
-        uint32_t current_time = HAL_GetTick();
-        float dt = (current_time - last_pid_time) / 1000.0f;
-        last_pid_time = current_time;
-
-        // Zabezpieczenie przed błędem matematycznym
-        if(dt <= 0.0f) dt = 0.001f;
-
-        // 3. Odczyt danych z żyroskopu i akcelerometru
-        MPU9250_Read(&sensor_data);
-
-        // 4. Przeliczenie sygnałów z CRSF na oczekiwaną prędkość obrotu (Setpoints)
-        //setpoint_roll = (roll - 992.0f) * 0.18f;
-        //setpoint_pitch = (pitch - 992.0f) * 0.18f;
-
-        // SYMULACJA BEZ KONTROLERA RC:
-        setpoint_roll = 0.0f;   // Chcę, żeby samolot był płasko (0 stopni) w osi Roll
-        setpoint_pitch = 10.0f; // Chcę, żeby samolot miał nos 10 stopni w górę w osi Pitch
-
-        // Jeśli odbiornik traci zasięg (drążki spadają blisko 0)
-        if (roll < 100) setpoint_roll = 0.0f;
-        if (pitch < 100) setpoint_pitch = 0.0f;
-
-        // 5. Obliczenie wartości stabilizujących przez PID
-        pid_out_roll = PID_Compute(&pid_roll, setpoint_roll, sensor_data.gyro_x, dt);
-        pid_out_pitch = PID_Compute(&pid_pitch, setpoint_pitch, sensor_data.gyro_y, dt);
-
-        // 6. MIKSER (Zamiana wyjść z PID na sygnały PWM)
-        pwm_elev = 1500 + (long)pid_out_pitch;
-
-        // Lotki działają przeciwbieżnie: jedna idzie w górę (+), druga w dół (-)
-        pwm_flapL = 1500 + (long)pid_out_roll;
-        pwm_flapR = 1500 - (long)pid_out_roll;
-
-        // Kierunek (Rudder) i Throttle zostawiamy na razie w trybie bezpośrednim
-        pwm_rudder = map(yaw, 172, 1811, 1000, 2000);
-        pwm_throttle = map(throttle, 172, 1811, 1000, 2000);
-
-        // 7. ZABEZPIECZENIA - obcięcie sygnałów PWM
-        if(pwm_elev > 2000) pwm_elev = 2000; else if(pwm_elev < 1000) pwm_elev = 1000;
-        if(pwm_flapL > 2000) pwm_flapL = 2000; else if(pwm_flapL < 1000) pwm_flapL = 1000;
-        if(pwm_flapR > 2000) pwm_flapR = 2000; else if(pwm_flapR < 1000) pwm_flapR = 1000;
-        if(pwm_rudder > 2000) pwm_rudder = 2000; else if(pwm_rudder < 1000) pwm_rudder = 1000;
-
-        // Zabezpieczenie silnika
-        if(pwm_throttle > 2000) pwm_throttle = 2000;
-        if(throttle < 200) pwm_throttle = 1000; // Awaryjne odcięcie silnika
-
-        // --- OBLICZANIE PRAWDZIWEGO KĄTA (FILTR KOMPLEMENTARNY) ---
-
-        // 1. Akcelerometr wylicza gdzie jest grawitacja (wzór z trygonometrii, 57.2957 to 180/PI)
-        accel_pitch = atan2f(-sensor_data.accel_x, sensor_data.accel_z) * 57.2957f;
-        accel_roll = atan2f(sensor_data.accel_y, sensor_data.accel_z) * 57.2957f;
-
-        // 2. Filtr komplementarny: Ufa w 98% żyroskopowi (szybkość), a w 2% akcelerometrowi (grawitacja)
-        // Zmieniasz angle_... dodając prędkość obrotu z żyroskopu pomnożoną przez czas (dt)
-        angle_pitch = 0.98f * (angle_pitch + (sensor_data.gyro_y * dt)) + 0.02f * accel_pitch;
-        angle_roll = 0.98f * (angle_roll + (sensor_data.gyro_x * dt)) + 0.02f * accel_roll;
-        // 8. Aktualizacja PWM na timerach
-        TIM4->CCR3 = (uint32_t)pwm_elev;     // PB8
-        TIM4->CCR4 = (uint32_t)pwm_flapL;    // PB9
-        TIM2->CCR3 = (uint32_t)pwm_flapR;    // PB10
-        TIM3->CCR4 = (uint32_t)pwm_rudder;   // PB1
-        TIM1->CCR2 = (uint32_t)pwm_throttle; // PA9
-    }
-  /* USER CODE END WHILE */
-
-  /* USER CODE BEGIN 3 */
+    /* USER CODE BEGIN 3 */
 
   /* USER CODE END 3 */
 }
@@ -464,7 +555,7 @@ static void MX_TIM1_Init(void)
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }

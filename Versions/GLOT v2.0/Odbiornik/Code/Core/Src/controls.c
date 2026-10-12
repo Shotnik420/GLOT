@@ -3,7 +3,7 @@
 
 // --- DEFINICJE ZMIENNYCH ---
 ServoConfig cfgFlapL   = {1600, 1000, 2000, "Klapa Lewa (FlapL)"};
-ServoConfig cfgFlapR   = {1300, 800, 1800, "Klapa Prawa (FlapR)"};
+ServoConfig cfgFlapR   = {1300, 800, 1600, "Klapa Prawa (FlapR)"};
 ServoConfig cfgElev    = {1200,  300,  2000, "Wysokosc (Elevator)"};
 ServoConfig cfgRudder  = {1400, 1000, 2000, "Kierunek (Rudder)"};
 
